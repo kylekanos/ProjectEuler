@@ -548,20 +548,16 @@ contains
       end do
    end function count_repetitions
 
-   !> count substrings, from https://www.rosettacode.org/wiki/Count_occurrences_of_a_substring#Fortran
+   !> count substrings in string
    integer(int64) function count_substr(str, sub) result(ctr)
       character(*), intent(in) :: str, sub
-      integer(int64) :: p, posn
- 
-      ctr = 0
-      if(len(sub) == 0) return
-      p = 1
-      do 
-        posn = index(str(p:), sub)
-        if (posn == 0) return
-        ctr = ctr + 1
-        p = p + posn + len(sub)
-      end do
-   end function
+      integer(int64) :: i, na, ns
+      na = len(str); ns = len(sub)
+      
+      ctr = 0_int64
+      do i=1,ns
+         if (sub == str(i:i+ns-1)) ctr = ctr + 1
+      end do !- i
+   end function count_substr
 
 end module EulerCommon
