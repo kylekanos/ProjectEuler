@@ -1,4 +1,4 @@
-Enter file contents hereprogram euler_052
+program euler_052
    integer, parameter :: int64 = selected_int_kind(10)
    integer(int64) :: i
    
