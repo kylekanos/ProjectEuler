@@ -1,5 +1,5 @@
 program euler_185
-   integer, parameter :: int64 = selected_int_kind(10)
+   use EulerCommon
    integer, parameter :: kmax = 100
    
    character(len=16) :: best_key
@@ -25,44 +25,48 @@ program euler_185
    ! infinite loop....
    do
       ! print if we're the best!
-      if (parents(1)%val < best_val) then
+!~       if (parents(1)%val < best_val) then
          best_key = parents(1)%key
          best_val = parents(1)%val
          print *, best_val,", ", best_key
-      end if
+!~       end if
       
       ! save the first parent (which should be the best)
       children(0) = parents(1)
       
       ! create new children by modifying them
       k = 1
-      do while k <= kmax
+      do while (k <= kmax)
          ! cross-over
          call random_number(x)
          i = int(15.0*x) + 1
-         child(k)%key = crossover(parents(i)%key, parents(i)%key)
-         child(k)%val = fitness(child(k)%key)
+         child%key = crossover(parents(i)%key, parents(i)%key)
+         child%val = fitness(child%key)
+         children(k) = child
          k = k + 1
          
          ! mutate
          call random_number(x)
          i = int(15.0*x) + 1
-         child(k)%key = mutate(parents(i)%key)
-         child(k)%val = fitness(child(k)%key)
+         child%key = mutate(parents(i)%key)
+         child%val = fitness(child%key)
+         children(k) = child
          k = k + 1
          
          ! invert
          call random_number(x)
          i = int(15.0*x) + 1
-         child(k)%key = invert(parents(i)%key)
-         child(k)%val = fitness(child(k)%key)
+         child%key = invert(parents(i)%key)
+         child%val = fitness(child%key)
+         children(k) = child
          k = k + 1
          
          ! permute
          call random_number(x)
          i = int(15.0*x) + 1
-         child(k)%key = permute(parents(i)%key)
-         child(k)%val = fitness(child(k)%key)
+         child%key = permute(parents(i)%key)
+         child%val = fitness(child%key)
+         children(k) = child
          k = k + 1
       end do
       
@@ -96,11 +100,11 @@ contains
    subroutine fill_guesses(hash)
       type(dictionary), intent(out) :: hash(22)
       character(len=16), dimension(22) :: key = ['5616185650518293', '3847439647293047', '5855462940810587', '9742855507068353', &
-												 '4296849643607543', '3174248439465858', '4513559094146117', '7890971548908067', &
-												 '8157356344118483', '2615250744386899', '8690095851526254', '6375711915077050', &
-												 '6913859173121360', '6442889055042768', '2321386104303845', '2326509471271448', &
-												 '5251583379644322', '1748270476758276', '4895722652190306', '3041631117224635', &
-												 '1841236454324589', '2659862637316867' ]
+                                                 '4296849643607543', '3174248439465858', '4513559094146117', '7890971548908067', &
+                                                 '8157356344118483', '2615250744386899', '8690095851526254', '6375711915077050', &
+                                                 '6913859173121360', '6442889055042768', '2321386104303845', '2326509471271448', &
+                                                 '5251583379644322', '1748270476758276', '4895722652190306', '3041631117224635', &
+                                                 '1841236454324589', '2659862637316867' ]
       integer(int64), dimension(22) :: val = [2,1,3,3,3,1,2,3,1,2,3,1,1,2,0,2,2,3,1,3,3,2]
       integer(int64) :: i
       
@@ -112,17 +116,25 @@ contains
    end subroutine fill_guesses
    
    subroutine sort_children()
-      integer(int64) :: i, j, K
-      character(len=16) :: V
+      integer(int64) :: i, j, V, g,gap
+      integer(int64), parameter :: gaps(5) = [57, 23, 10, 4, 1]
+      character(len=16) :: K
       
       ! at 100 elements, simple swap is fine
-      do i=0,kmax-1
-         K = children(i)%key
-         V = children(i)%val
-         do j=i+1,kmax
-            
-         end do !- j
-      end do
+      do g=1,5
+         gap = gaps(g)
+         do i=gap,kmax
+            K = children(i)%key
+            V = children(i)%val
+            j = i
+            do while (j>= gap .and. children(j-gap)%val > V)
+               children(j)%val = children(j-gap)%val
+               children(j)%key = children(j-gap)%key               
+            end do
+            children(j)%key = K
+            children(j)%val = V
+         end do !- i
+      end do !- g
    end subroutine sort_children
    
    function crossover(a, b) result(c)
@@ -219,9 +231,9 @@ contains
    
    function fitness(str) result(F)
       character(len=16), intent(in) :: str
-      integer(int64) :: F, fitLevel, correct
+      integer(int64) :: F
       character(len=16) :: test
-      integer(int64) :: i,j
+      integer(int64) :: i,j, fitLevel, correct
       
       fitLevel = 0
       do i=1,size(guesses)
@@ -236,7 +248,3 @@ contains
       F = size(guesses) - fitLevel
    end function fitness
 end program euler_185
-
-
-
-
