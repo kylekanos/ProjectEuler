@@ -1,11 +1,7 @@
 module EulerCommon
    implicit none
    integer, parameter :: int64 = selected_int_kind(10)
-   integer(int64), parameter :: first_fifty_primes(50) = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89, &
-                                                        97,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179,181, &
-                                                        191,193,197,199,211,223,227,229]
-   ! primes done: 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,67,79,89,131
-   ! primes need: 59,61,71,73,83,97,101,103,107,109,113,127,137,149,151,163,167,173,179,181,191,193,197,199,211,223,227,229
+   integer, parameter :: dp = selected_real_kind(15,307)
    
 contains
    !> check to see if all digits are in the number
