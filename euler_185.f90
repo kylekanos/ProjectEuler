@@ -3,7 +3,7 @@ program euler_185
    integer, parameter :: kmax = 100
    
    character(len=16) :: best_key
-   integer(int64) :: best_val, k, i
+   integer(int64) :: best_val, k, i, j
    real :: x
    
    type dictionary
@@ -12,8 +12,10 @@ program euler_185
    end type
    type(dictionary), dimension(22) :: guesses
    type(dictionary), dimension(kmax) :: parents
-   type(dictionary), dimension(0:kmax) :: children
-   type(dictionary) :: child
+   type(dictionary), dimension(kmax) :: children
+   type(dictionary) :: child, best
+
+   call init_random_seed()
    
    call fill_guesses(guesses)
    
@@ -21,29 +23,30 @@ program euler_185
    
    best_key = parents(1)%key
    best_val = parents(1)%val
+   best = parents(1)
    
    ! infinite loop....
    do
       ! print if we're the best!
-!~       if (parents(1)%val < best_val) then
+      if (parents(1)%val < best_val) then
          best_key = parents(1)%key
          best_val = parents(1)%val
          print *, best_val,", ", best_key
-!~       end if
-      
-      ! save the first parent (which should be the best)
-      children(0) = parents(1)
+      end if
       
       ! create new children by modifying them
-      k = 1
-      do while (k <= kmax)
+      children(1) = parents(1)
+      k = 2
+      do
          ! cross-over
-         call random_number(x)
-         i = int(15.0*x) + 1
-         child%key = crossover(parents(i)%key, parents(i)%key)
+         call random_number(x);   i = int(15.0*x) + 1
+         call random_number(x);   j = int(15.0*x) + 1
+         child%key = crossover(parents(i)%key, parents(j)%key)
          child%val = fitness(child%key)
          children(k) = child
          k = k + 1
+         if (k >= kmax) exit
+!~          print *,parents(i)%key, " -> ", child%key, ' (crs)'
          
          ! mutate
          call random_number(x)
@@ -52,6 +55,8 @@ program euler_185
          child%val = fitness(child%key)
          children(k) = child
          k = k + 1
+         if (k >= kmax) exit
+!~          print *,parents(i)%key, " -> ", child%key, ' (mut)'
          
          ! invert
          call random_number(x)
@@ -60,30 +65,37 @@ program euler_185
          child%val = fitness(child%key)
          children(k) = child
          k = k + 1
+         if (k >= kmax) exit
+!~          print *,parents(i)%key, " -> ", child%key, ' (inv)'
          
-         ! permute
+         ! exchange
          call random_number(x)
          i = int(15.0*x) + 1
-         child%key = permute(parents(i)%key)
+         child%key = exchange(parents(i)%key)
          child%val = fitness(child%key)
          children(k) = child
          k = k + 1
+         if (k >= kmax) exit
+!~          print *,parents(i)%key, " -> ", child%key, ' (prm)'
+
+!~          stop
       end do
       
-      ! sort the children by fitness
-      call sort_children()
+      ! find the best solution (minimum val)
+      call get_best_child()
       
       ! check if we have a valid solution
-      if (children(0)%val == 0) then
-         print *, children(0)%val
+      if (children(1)%val == 0) then
+         print *, children(1)%key
          exit
       end if
       
       ! copy the children to the parent
       do k=1,kmax
-         parents(k)%val = children(k-1)%val
-         parents(k)%key = children(k-1)%key
+         parents(k) = children(k)
+!~          print *,parents(k)%val, parents(k)%key
       end do
+!~       stop
    end do
 
 contains
@@ -92,7 +104,7 @@ contains
       integer(int64) :: i
       
       do i=1,kmax
-         parents(i)%key = '1122334455667789'
+         parents(i)%key = '4640135623535321'
          parents(i)%val = 22
       end do
    end subroutine fill_parents
@@ -107,36 +119,55 @@ contains
                                                  '1841236454324589', '2659862637316867' ]
       integer(int64), dimension(22) :: val = [2,1,3,3,3,1,2,3,1,2,3,1,1,2,0,2,2,3,1,3,3,2]
       integer(int64) :: i
-      
+
       do i=1,22
-         hash(i)%key   = key(1)
-         hash(i)%val = val(1)
+         hash(i)%key   = key(i)
+         hash(i)%val = val(i)
       end do
       
    end subroutine fill_guesses
-   
+
+   !> swap the smallest and first cells
+   subroutine get_best_child()
+      integer(int64) :: i
+      type(dictionary) :: child
+
+      child = children(1)
+      j = 1
+      do i=2,kmax
+         if (children(i)%val < child%val) then
+            child = children(i)
+         end if
+      end do !- i
+      children(1) = child
+   end subroutine get_best_child
+
+   !> shell sort
    subroutine sort_children()
-      integer(int64) :: i, j, V, g,gap
-      integer(int64), parameter :: gaps(5) = [57, 23, 10, 4, 1]
-      character(len=16) :: K
-      
-      ! at 100 elements, simple swap is fine
-      do g=1,5
-         gap = gaps(g)
-         do i=gap,kmax
-            K = children(i)%key
-            V = children(i)%val
+      integer(int64) :: i, j, inc
+      type(dictionary) :: child
+
+      inc = kmax / 2
+      do while (inc > 0)
+         do i=inc+1,kmax
             j = i
-            do while (j>= gap .and. children(j-gap)%val > V)
-               children(j)%val = children(j-gap)%val
-               children(j)%key = children(j-gap)%key               
-            end do
-            children(j)%key = K
-            children(j)%val = V
+            child = children(i)
+            do while (j >= inc+1 .and. children(j-inc)%val > child%val)
+               children(j) = children(j-inc)
+               j = j - inc
+            end do !- while
+            children(j) = child
+
+            if (inc == 2) then
+               inc = 1
+            else
+               inc = inc * 5 / 11
+            end if
          end do !- i
-      end do !- g
+      end do !- while
    end subroutine sort_children
-   
+
+   !> merge two strings
    function crossover(a, b) result(c)
       character(len=16), intent(in) :: a,b
       character(len=16) :: c
@@ -150,8 +181,9 @@ contains
          c(i:i) = b(i:i)
       end do !- i
    end function crossover
-   
-   function permute(a) result(b)
+
+   !> exchange two numbers
+   function exchange(a) result(b)
       character(len=16), intent(in) :: a
       character(len=16) :: b
       character(len=1) :: s
@@ -167,8 +199,9 @@ contains
       s = a(c1:c1)
       b(c1:c1) = b(c2:c2)
       b(c2:c2) = s(1:1)
-   end function permute
-   
+   end function exchange
+
+   !> change one value in the string
    function mutate(a) result(b)
       character(len=16), intent(in) :: a
       character(len=16) :: b
@@ -182,17 +215,21 @@ contains
       
       ! the mutation m is any number from 0 to 9
       call random_number(x)
-      m = int(9.0*x)
-      write(s,'(i1)') m
+      write(s,'(i1)') int(9.0*x)
+      if (s(1:1) == b(idx:idx)) then
+         call random_number(x)
+         write(s,'(i1)') int(9.0*x)
+      end if
       
       ! copy a to b, then replace b(idx) with m
       b = a
       b(idx:idx) = s(1:1)
    end function mutate
-   
+
+   !> invert a segment of a string
    function invert(a) result(b)
       character(len=16), intent(in) :: a
-      character(len=16) :: b
+      character(len=16) :: b, G
       character(len=1) :: s
       integer(int64) :: i1,i2,j,l
       real :: x
@@ -224,27 +261,27 @@ contains
       l = len(a)+1
       do j=i1,i2
          s = b(j:j)
-         b(j:j) = b(l-i:l-i)
-         b(l-i:l-i) = s(1:1)
+         b(j:j) = b(l-j:l-j)
+         b(l-j:l-j) = s(1:1)
       end do !- j
    end function invert
-   
+
+   !> determine the fitness of the function
    function fitness(str) result(F)
       character(len=16), intent(in) :: str
       integer(int64) :: F
       character(len=16) :: test
       integer(int64) :: i,j, fitLevel, correct
       
-      fitLevel = 0
-      do i=1,size(guesses)
+      F = 0
+      do i=1,22
          correct = 0
          test = guesses(i)%key
          do j=1,len(str)
             if (test(j:j) == str(j:j)) correct = correct + 1
          end do !- j
-         if (correct == guesses(i)%val) fitLevel = fitLevel + 1
+         F = F + abs(correct - guesses(i)%val)
       end do !- i
       
-      F = size(guesses) - fitLevel
    end function fitness
 end program euler_185
