@@ -41,7 +41,7 @@ contains
       integer(int64) :: m, p_ct, m1, cm, l1
       
       ! step 1: check level
-      if (lev == ???) then
+      if (???) then
          call ???
          ctr = ctr + one
          return
@@ -60,6 +60,6 @@ contains
       end do !- m
    end subroutine explore
 
-! redacted two procedures since solutions should not be full for some of the more difficult ones....
+! removed two procedures since solutions should not be full for some of the more difficult ones....
 end program euler_201
 
