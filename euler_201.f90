@@ -40,7 +40,7 @@ contains
       integer(int64), intent(in) :: start, curr_sum, lev
       integer(int64) :: m, p_ct, m1, cm, l1
       
-      ! step 1: check level
+      ! step 1: check something
       if (???) then
          call ???
          ctr = ctr + one
