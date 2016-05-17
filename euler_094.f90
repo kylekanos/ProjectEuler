@@ -1,5 +1,5 @@
 program euler_094
-   integer, parameter :: int64 = selected_int_kind(10)
+   use EulerCommon
    integer(int64) :: L = 10**9
    integer(int64) :: a, c, s, p, m
    integer(int64) :: new(4)
