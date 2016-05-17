@@ -607,4 +607,56 @@ contains
         lcg = int(mod(s, int(huge(0), int64)), kind(0))
       end function lcg
    end subroutine init_random_seed
+   
+   !>  Solovay-Strassen primality test (currently experimental)
+   logical function ss_prime(n,kopt) result(bool)
+      integer(int64), intent(in) :: n
+      integer(int64), optional :: kopt
+      integer(int64) :: k, a, x, y
+      real :: xx
+      k = 20
+      if (present(kopt)) k = kopt
+      
+      if (any(n==[2,3,5,7,11])) then
+         bool = .true.
+         return
+      end if
+      ! even numbers have a 0 for the first bit
+      if (iand(n,1_int64)==0) then
+         bool = .false.
+         return
+      end if
+      
+      do while (k > 0)
+         call random_number(xx)
+         a = int((n-3)*xx) + 2
+         x = legendre(a, n)
+         y = mod(a**((n-1)/2), n)
+         if ((x==0) .or. (y /= mod(x,n))) then
+            bool = .false.
+            return
+         end if
+         k = k - 1
+      end do
+      bool = .true.
+   end function ss_prime
+   
+   !> Legendre symbol (a/p); see https://en.wikipedia.org/wiki/Legendre_symbol
+   recursive function legendre(a, p) result(L)
+      integer(int64), intent(in) :: a, p
+      integer(int64) :: L, r
+      ! if the next line doesn't work, get a better compiler
+      if (any(a==[0,1])) then
+         L = a
+         return
+      end if
+      if (iand(a,1_int64)==0) then
+         L = legendre(a/2, p)
+         if (iand(p*p-1, 8_int64) /= 0) L = -L
+      else
+         L = legendre(mod(p,a), a)
+         if (iand((a-1)*(p-1), 4_int64) /= 0) L = -L
+      end if
+      return
+   end function legendre
 end module EulerCommon
