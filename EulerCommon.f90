@@ -1,6 +1,6 @@
 module EulerCommon
    implicit none
-   integer, parameter :: int64 = selected_int_kind(10)
+   integer, parameter :: int64 = selected_int_kind(15)
    integer, parameter :: dp = selected_real_kind(15,307)
    
 contains
@@ -20,7 +20,7 @@ contains
 
       do i=1,len(trim(digits))
          repin = str(i:i)
-         digits = replaceText(digits, repin, repout)
+         digits = replace_text(digits, repin, repout)
       end do
 
       isPandigital = len(trim(digits)) == 0
@@ -32,7 +32,7 @@ contains
    
 
    !> replaces text in str with rep
-   function replaceText(str, text, rep) result(outs)
+   function replace_text(str, text, rep) result(outs)
       character(*) :: str, text, rep
       character(len=len(str)) :: outs
       integer :: i, nt, nr
@@ -45,7 +45,7 @@ contains
          if (i == 0) exit
          outs = outs(:i-1) // rep(:nr) // outs(i+nt:)
       end do
-   end function
+   end function replace_text
 
    !> returns true if the two input numbers are permutations of each other
    logical function isPermutation(a,b,n)
@@ -60,7 +60,7 @@ contains
 
       do i=1,n
          repin = t1(i:i)
-         t2 = replaceText(t2, repin, repout)
+         t2 = replace_text(t2, repin, repout)
       end do !- i
 
       isPermutation = len(trim(t2)) == 0
@@ -122,28 +122,39 @@ contains
    logical function isPrime(n) result(res)
     integer(int64), intent(in) :: n
     integer(int64) :: x, i
- 
-    if (n <= 1 .or. mod(n,2)==0) then
-       res = .false.; return
-    else if (any(n == [2,3,5,7,11])) then
-       res = .true.; return
-    else
-       x = int(sqrt(real(n)))
-       do i=3,x,2
-          if (mod(n, i) == 0) then
-             res = .false.; return
-          end if
-       end do
-       res = .true.
-    endif
 
+    if (n < 2) then
+       res = .false.
+       return
+    end if
+
+    if (any(n==[2,3])) then
+       res = .true.
+       return
+    end if
+
+    if (mod(n,2)==0 .or. mod(n,3)==0) then
+       res = .false.
+       return
+    end if
+
+    ! test by 6k+/-1 complement
+    x = int(sqrt(real(n)))+1
+    do i=6,x,6
+       if (mod(n,i-1)==0 .or. mod(n,i+1)==0) then
+          res = .false.
+          return
+       end if
+    end do
+
+    res = .true.
     return
   end function isPrime
 
-   !> generate a list of primes to n
+   !> generate a logical array indicating if index i is prime or composite
    subroutine prime_sieve(n,p)
       integer(int64), intent(in) :: n
-      logical, dimension(n) :: p
+      logical, dimension(n), intent(out) :: p
       integer(int64) :: i, q(5)=[2,3,5,7,11], r
 
       p(:) = .true.
@@ -163,17 +174,15 @@ contains
    end subroutine prime_sieve
 
   !> find the factors of a number
-   subroutine find_factors(n, d, i)
+   subroutine find_factors(n, d)
       integer(int64), intent(in) :: n
       integer(int64), dimension(:), intent(out) :: d
-      integer(int64), intent(out) :: i
+      integer(int64) :: div, next, rest, i
 
-      integer(int64) :: div, next, rest
-
-      i    = 1
       div  = 2
       next = 3
       rest = n
+      i    = 1
 
       d(:) = 0
 
@@ -186,18 +195,11 @@ contains
          div = next
          next = next + 2
       end do
-      ! remove the last one
-      i = i - 1
-      ! remove the duplicates
-      div=1
-      do
-         if (d(div) == d(div+1)) i = i - 1
-      end do
    end subroutine find_factors
 
    function factor(n) result(factors)
       integer(int64), intent(in) :: n
-      integer(int64), dimension(20) :: factors
+      integer(int64), dimension(200) :: factors
       integer(int64) :: m, p, e, k
 
       factors = 0
@@ -281,6 +283,13 @@ contains
       return
       
    end function noDuplicates
+
+   !> works for first 50-ish Fibonacci numbers
+   integer(int64) function fibonacci_approx(n) result(F)
+      integer(int64), intent(in) :: n
+      real(dp), parameter :: sq5_inv = 1.0_dp / sqrt(5.0_dp)
+      F = floor(sq5_inv * varphi**n + 0.5_dp)
+   end function fibonacci_approx
 
    integer(int64) function fibonacci(n) result(F)
       integer(int64), intent(in) :: n
@@ -423,19 +432,46 @@ contains
       integer(int64), intent(in) :: n
       integer(int64) :: i
 
-      F = 1
-      do i=1,n
-         F = F * i
-      end do
+      if (n < 30) then
+
+        F = 1
+        do i=1,n
+          F = F * i
+        end do
+      else
+         F = nint(exp(gammaln(n+1._dp)))
+      end if
       
    end function
+
+   !> the log-gamma function
+   real(dp) function gammaln(n) result(lg)
+      real(dp), intent(in) :: n
+      real(dp) :: ser, tmp, x, y
+      real(dp), parameter :: cof(6) = [76.18009172947146_dp, -86.5053203941677_dp, &
+        24.01409824083091_dp, -1.231739572450155_dp, 0.1208650973866179e-2_dp, &
+        -0.5395239384953e-5_dp]
+      real(dp), parameter :: stp = 2.5066282746310005_dp
+      integer :: j
+
+      x = n*n
+      y = x
+      tmp = x + 5.5_dp
+      tmp = (x + 0.5_dp)*log(tmp) - tmp
+      ser = 1.000000000190015_dp
+      do j=1,6
+         y = y + 1.0_dp
+         ser = ser + cof(j) / y
+      end do !- j
+      lg = tmp + log(stp*ser / x)
+   end function gammaln
 
    !> turns an array into a single number
    integer(int64) function arrayAsNumber(n) result(A)
       integer(int64), intent(in) :: n(:)
       integer(int64) :: i
       A = 0
-      do i=1,size(n)
+      do i=size(n),1,-1
          A = A*10_int64 + n(i)
       end do
    end function arrayAsNumber
@@ -544,23 +580,70 @@ contains
       end do
    end function count_repetitions
 
-   !> count substrings in string
+   !> count substrings, from https://www.rosettacode.org/wiki/Count_occurrences_of_a_substring#Fortran
    integer(int64) function count_substr(str, sub) result(ctr)
       character(*), intent(in) :: str, sub
-      integer(int64) :: i, na, ns
-      na = len(str); ns = len(sub)
-      
+      integer(int64) :: ns, na, i
+      ns = len(str)
+      na = len(sub)
       ctr = 0_int64
+
       do i=1,ns
-         if (sub == str(i:i+ns-1)) ctr = ctr + 1
-      end do !- i
+         if (sub == str(i:i+na-1)) ctr = ctr + 1
+      end do
    end function count_substr
 
+   !> return the number of primes in the integer given replacement
+   integer(int64) function count_primes(str,d,p_list) result(ctr)
+      character(len=*), intent(in) :: str, d
+      logical, dimension(:), intent(in) :: p_list
+      character(len=10) :: digits='0123456789'
+      character(len=len(str)) :: new_str
+      integer(int64) :: nd,i,val,nlist,j,ns
 
-   !> RNG seed initializer, taken directly from https://gcc.gnu.org/onlinedocs/gfortran/RANDOM_005fSEED.html
+      nd = len(d)
+      if (nd /= 1) then
+         ctr = -1
+         return
+      end if
+
+      nlist = size(p_list)
+      ns = len(str)
+
+      ctr = 0
+      do i=1,10
+         do j=1,ns
+            new_str(j:j) = merge(digits(i:i),str(j:j),str(j:j)==d(1:1))
+         end do
+         read(new_str,*) val
+         if (val < 100000) continue
+         if (val > nlist) continue
+         if (p_list(val)) ctr = ctr + 1
+      end do
+   end function count_primes
+
+   !> returns the binomial coefficient
+   integer(int64) function binomial(n, k) result(nk)
+      integer(int64), intent(in) :: n,k
+      nk = factorial(n) / (factorial(k) * factorial(n - k))
+   end function binomial
+
+   !> uses log-gamma to compute the binomial coefficient
+   integer(int64) function choice(n, k) result(nk)
+      integer(int64), intent(in) :: n,k
+      nk = nint(exp(factl(n) - factl(k) - factl(n-k)))
+   end function choice
+
+   real(dp) function factl(n) result(F)
+      integer(int64), intent(in) :: n
+      real(dp) :: x
+      x = real(n,dp)
+      F = exp(gammaln(x+1_dp))
+   end function factl
+
    subroutine init_random_seed()
       integer, allocatable :: seed(:)
-      integer :: i, n, un, istat, dt(8), pid
+      integer(int64) :: i, n, un, istat, dt(8), pid
       integer(int64) :: t
       
       call random_seed(size = n)
@@ -578,9 +661,9 @@ contains
          call system_clock(t)
          if (t == 0) then
             call date_and_time(values=dt)
-            t = (dt(1) - 1970) * 365_int64 * 24 * 60 * 60 * 1000 &
-                 + dt(2) * 31_int64 * 24 * 60 * 60 * 1000 &
-                 + dt(3) * 24_int64 * 60 * 60 * 1000 &
+            t = (dt(1) - 1970) * 365 * 24 * 60 * 60 * 1000 &
+                 + dt(2) * 31 * 24 * 60 * 60 * 1000 &
+                 + dt(3) * 24 * 60 * 60 * 1000 &
                  + dt(5) * 60 * 60 * 1000 &
                  + dt(6) * 60 * 1000 + dt(7) * 1000 &
                  + dt(8)
@@ -595,8 +678,7 @@ contains
    contains
     ! This simple PRNG might not be good enough for real work, but is
     ! sufficient for seeding a better PRNG.
-      function lcg(s)
-        integer :: lcg
+      integer(int64) function lcg(s)
         integer(int64) :: s
         if (s == 0) then
            s = 104729
@@ -604,59 +686,219 @@ contains
            s = mod(s, 4294967296_int64)
         end if
         s = mod(s * 279470273_int64, 4294967291_int64)
-        lcg = int(mod(s, int(huge(0), int64)), kind(0))
+        lcg = int(mod(s, int(huge(0))))
       end function lcg
    end subroutine init_random_seed
-   
-   !>  Solovay-Strassen primality test (currently experimental)
-   logical function ss_prime(n,kopt) result(bool)
+
+   subroutine swap(a,b)
+      integer(int64), intent(inout) :: a,b
+      integer(int64) :: T
+      t = a
+      a = b
+      b = t
+   end subroutine swap
+
+
+   !> implements binary gcd
+   recursive function gcd(a, b) result(g)
+      integer(int64), intent(in) :: a, b
+      integer(int64), parameter :: zero=0, one=1, two=2
+      integer(int64) :: u, v, t, k
+      integer(int64) :: g
+
+      u = abs(a)
+      v = abs(b)
+
+      if (u < v) call swap(u,v)
+
+      if (v == zero) then
+         g = u
+         return
+      end if
+
+      k = 1
+      do while ( (mod(u,two) == zero) .and. (mod(v,two) == 0))
+         u = u / two
+         v = v / two
+         k = k * two
+      end do
+
+      t = merge(u, -v, mod(u,two)==zero)
+
+      do while (t /= zero)
+         do while (mod(t, two) == zero)
+            t = t / two
+         end do
+
+         if (t > zero) then
+            u = t
+         else
+            v = -t
+         endif
+         t = u - v
+      end do
+
+      g = u*k
+      return
+   end function gcd
+
+   !> least common multiple of two numbers
+   integer(int64) function lcm(a,b)
+      integer(int64), intent(in) :: a,b
+      lcm = a*b/gcd(a,b)
+   end function lcm
+
+   !> returns the length of the Collatz sequence starting at n
+   !> taken from https://github.com/aphirst/EulerFTN/blob/master/functions.f90
+   recursive function Collatz(n, lengths, memoise) result(coll)
+      integer(int64), intent(in) :: n
+      integer(int64), intent(inout) :: lengths(:)
+      logical, intent(in), optional :: memoise
+      integer(int64) :: coll
+      
+      if (n <= size(lengths)) then
+         if (lengths(n) /= 0) then
+            coll = lengths(n)
+            return
+         else if (n == 1) then
+            coll = 1
+            lengths(1) = 1
+            return
+         end if
+      end if
+
+      if ( modulo(n,2_int64) == 0 ) then
+         coll = 1 + Collatz(n/2 , lengths, .true.)
+      else
+         coll = 1 + Collatz(3*n + 1 , lengths, .true.)
+      end if
+
+      if ( present(memoise) ) then
+         if (memoise) then
+            if (n <= size(lengths)) lengths(n) = coll
+         end if
+      end if
+  end function Collatz
+
+    !>  Miller-Rabin primality test
+   logical function mr_prime(n,kopt) result(bool)
       integer(int64), intent(in) :: n
       integer(int64), optional :: kopt
-      integer(int64) :: k, a, x, y
-      real :: xx
-      k = 20
-      if (present(kopt)) k = kopt
+      integer(int64), parameter :: known_primes(5) = [2,3,5,7,11], two=2_int64
+      integer(int64) :: k
+      integer(int64) :: s, d, i, a, x, r
+
       
-      if (any(n==[2,3,5,7,11])) then
+      k = 30
+      if (present(kopt)) k = kopt
+
+      ! if this line doesn't work for you, get a better compiler
+      if (any(n==known_primes)) then
          bool = .true.
          return
       end if
-      ! even numbers have a 0 for the first bit
-      if (iand(n,1_int64)==0) then
+
+      ! eliminate numbers less than ten that aren't prime as above
+      if (n < 10) then
          bool = .false.
          return
       end if
-      
-      do while (k > 0)
-         call random_number(xx)
-         a = int((n-3)*xx) + 2
-         x = legendre(a, n)
-         y = mod(a**((n-1)/2), n)
-         if ((x==0) .or. (y /= mod(x,n))) then
+
+      ! eliminate factors of the small known primes
+      do i=1,5
+         if (mod(n,known_primes(i))==0_int64) then
             bool = .false.
             return
          end if
-         k = k - 1
       end do
+
+      s = 1
+      do while ((mod(n-1, two**s))==0_int64)
+         s = s + 1
+      end do !- while
+
+      d = (n-1_int64) / two**s
+
+      do i=1,k
+         a = randrange(two, n-two)
+         x = mod(a**d, n)
+         if (x < 1 .or. x>n-1) then
+            do r=1,s-1
+               x = mod(x**(two*r), n)
+               if (x==1) then
+                  bool = .false.
+                  return
+               end if
+            end do !-r
+         end if
+      end do !- i
+
       bool = .true.
-   end function ss_prime
+      return
+   end function mr_prime
+
+   !> returns a random number in the range (a,b)
+   integer(int64) function randrange(a, b) result(x)
+      integer(int64), intent(in) :: a, b
+      real(dp) :: xx
+      call random_number(xx)
+      x = floor(a + xx * real(max(a,b) - min(a, b)))
+   end function randrange
    
    !> Legendre symbol (a/p); see https://en.wikipedia.org/wiki/Legendre_symbol
    recursive function legendre(a, p) result(L)
       integer(int64), intent(in) :: a, p
-      integer(int64) :: L, r
+      integer(int64) :: L
+      
       ! if the next line doesn't work, get a better compiler
       if (any(a==[0,1])) then
          L = a
          return
       end if
-      if (iand(a,1_int64)==0) then
+
+      if (mod(a,2_int64)==0) then
          L = legendre(a/2, p)
-         if (iand(p*p-1, 8_int64) /= 0) L = -L
+         if (iand(p*p-1, 8_int64) /= 0) L = -1*L
       else
          L = legendre(mod(p,a), a)
-         if (iand((a-1)*(p-1), 4_int64) /= 0) L = -L
+         if (iand((a-1)*(p-1), 4_int64) /= 0) L = -1*L
       end if
       return
    end function legendre
+
+   !> sum the digits
+   integer(int64) function digit_sum(n) result(D)
+      integer(int64), intent(in) :: n
+      integer(int64) :: m, a(32), b=10, i
+
+      a=0; m=n; i=1
+      do while (m /= 0)
+         a(i) = mod(m,b)
+         m = m / b
+         i = i + 1
+      end do
+      D = sum(a)
+   end function digit_sum
+
+   function sigma2(x, n) result(divs)
+      integer(int64) :: n, x
+      integer(int64), dimension(0:n) :: divs
+      integer(int64) :: i, d
+
+      divs(0:1) = [0,1]
+      do i=2,n
+         divs(i) = i**x + 1
+      end do !- i
+      do i=2,int(n**0.5)+1
+         divs(i*i) = divs(i*i) + i**x
+         do d=i*(i+1),n,i
+            divs(d) = divs(d) + i**x + (d/i)**x
+         end do !- d
+      end do !- i
+   end function sigma2
+
+   logical function legal_move(a,b,S)
+      integer(int64), intent(in) :: a,b,S
+      legal_move = (a > 0) .and. (a < S+1) .and. (b > 0) .and. (b < S+1)
+   end function
 end module EulerCommon
