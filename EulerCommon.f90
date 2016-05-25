@@ -700,11 +700,10 @@ contains
 
 
    !> implements binary gcd
-   recursive function gcd(a, b) result(g)
+   integer(int64) function gcd(a, b) result(g)
       integer(int64), intent(in) :: a, b
       integer(int64), parameter :: zero=0, one=1, two=2
       integer(int64) :: u, v, t, k
-      integer(int64) :: g
 
       u = abs(a)
       v = abs(b)
