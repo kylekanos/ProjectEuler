@@ -28,43 +28,4 @@ contains
          A = A + one
       end do
    end function RepDiv
-   
-   integer(int64) function gcd(a,b) result(g)
-      integer(int64), intent(in) ::a,b
-      integer(int64) :: u, v, t, k
-      u = abs(a); v = abs(b)
-      if (u < v) then
-         t = u
-         u = v
-         v = t
-      end if
-      
-      if (V == zero) then
-         g = u
-         return
-      end if
-      
-      k = 1
-      do while ((mod(u,two)==zero).and.(mod(v,two)==zero))
-         u = u / two
-         v = v / two
-         k = k * two
-      end do
-      
-      t = merge(u, -v, mod(u,two)==zero)
-      
-      do while (t/=zero)
-         do while (mod(t,two)==zero)
-            t = t/two
-         end do
-         
-         if (t>zero) then
-            u = t
-         else
-            v = -t
-         endif
-         t = u - v
-      end do
-      g = u*k
-   end function gcd
 end program euler_129
