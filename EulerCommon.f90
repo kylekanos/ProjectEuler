@@ -150,6 +150,25 @@ contains
     res = .true.
     return
   end function isPrime
+  
+  !> returns the next prime after input number n (not required to be prime)
+  integer(int64) function next_prime(n) result(p)
+     integer(int64), intent(in) :: n
+     integer(int64) :: st
+     ! take care of the only even prime
+     if (n==2) then
+        p = 3
+        return
+     end if
+     
+     ! starting number should otherwise be odd
+     st = merge(n+1, n+2, mod(n,2)==0)
+     
+     ! loop through and test primes, using Bertrand's theorem
+     do p=st,2*n,2
+        if (isPrime(p)) return
+     end do !- p
+  end function next_prime
 
    !> generate a logical array indicating if index i is prime or composite
    subroutine prime_sieve(n,p)
