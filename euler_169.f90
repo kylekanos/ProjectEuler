@@ -32,7 +32,7 @@ contains
       end do !- i
       ! add "0.5" term to odd terms
       do i=2,26
-         if (mod(twos(i-1),2)==1 .and. twos(i-1)/=0) then
+         if (mod(twos(i-1),2)==1) then
             tmp(i) = tmp(i) + 5
          end if
       end do ! -i
