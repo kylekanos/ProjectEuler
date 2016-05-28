@@ -151,6 +151,127 @@ contains
     return
   end function isPrime
   
+  !> more efficient is_prime function than above, adapted from http://stackoverflow.com/a/5694432/1276356
+  logical function is_prime(x) result(bool)
+      integer(int64), intent(in) :: x
+      integer(int64) :: small_primes(10) = [2,3,5,7,11,13,17,19,23,29]!, indices(8) = [1,7,11,13,17,19,23,29]
+      integer(int64) ::N, i, p, q
+      N = 10
+      ! test small primes for a match
+      if (any(x==small_primes)) then
+         bool = .true.
+         return
+      end if
+
+      ! test small primes for divisbility
+      do i=1,N
+         p = small_primes(i)
+         q = x/p
+         if (q < p) then
+            bool = .true.
+            return
+         end if
+         if (x == q*p) then
+            bool = .false.
+            return
+         end if
+      end do !- i
+
+      ! test other primes
+      i = 31_int64
+      do
+         q = x/i
+         if (q < i) then
+            bool = .true.
+            return
+         end if
+         if (x == q*i) then
+            bool = .false.
+            return
+         end if
+         i = i + 6
+
+         q = x/i
+         if (q < i) then
+            bool = .true.
+            return
+         end if
+         if (x == q*i) then
+            bool = .false.
+            return
+         end if
+         i = i + 4
+
+         q = x/i
+         if (q < i) then
+            bool = .true.
+            return
+         end if
+         if (x == q*i) then
+            bool = .false.
+            return
+         end if
+         i = i + 2
+
+         q = x/i
+         if (q < i) then
+            bool = .true.
+            return
+         end if
+         if (x == q*i) then
+            bool = .false.
+            return
+         end if
+         i = i + 4
+
+         q = x/i
+         if (q < i) then
+            bool = .true.
+            return
+         end if
+         if (x == q*i) then
+            bool = .false.
+            return
+         end if
+         i = i + 2
+
+         q = x/i
+         if (q < i) then
+            bool = .true.
+            return
+         end if
+         if (x == q*i) then
+            bool = .false.
+            return
+         end if
+         i = i + 4
+
+         q = x/i
+         if (q < i) then
+            bool = .true.
+            return
+         end if
+         if (x == q*i) then
+            bool = .false.
+            return
+         end if
+         i = i + 6
+
+         q = x/i
+         if (q < i) then
+            bool = .true.
+            return
+         end if
+         if (x == q*i) then
+            bool = .false.
+            return
+         end if
+         i = i + 2
+      end do !-
+      bool = .true.
+      return
+   end function is_prime
+  
   !> returns the next prime after input number n (not required to be prime)
   integer(int64) function next_prime(n) result(p)
      integer(int64), intent(in) :: n
@@ -166,7 +287,7 @@ contains
      
      ! loop through and test primes, using Bertrand's theorem
      do p=st,2*n,2
-        if (isPrime(p)) return
+        if (is_prime(p)) return
      end do !- p
   end function next_prime
 
