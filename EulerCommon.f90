@@ -1040,4 +1040,27 @@ contains
       integer(int64), intent(in) :: a,b,S
       legal_move = (a > 0) .and. (a < S+1) .and. (b > 0) .and. (b < S+1)
    end function
+   
+   !> returns the triangular number of n
+   integer(int64) function triangular(n) result(s)
+      integer(int64), intent(in) :: n
+      s = n*(n+1_int64) / 2_int64
+   end function triangular
+
+   
+   !> returns the lagged fibonacci generator (for Euler 149)
+   subroutine lfg(n,S)
+      integer(int64), intent(in) :: n
+      integer(int64), intent(inout) :: S(n)
+      integer(int64) :: k
+
+      ! fill primer array
+      do k=1,55
+         S(k) = mod(100003_int64 - k*(200003_int64 - k*k*300007_int64), 1000000_int64) - 500000_int64
+      end do !- k
+
+      do k=56,n
+         S(k) = mod(S(k-24) + S(k-55) + 1000000_int64, 1000000_int64) - 500000_int64
+      end do !- k
+   end subroutine lfg
 end module EulerCommon
