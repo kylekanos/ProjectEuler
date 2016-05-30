@@ -1,11 +1,13 @@
 module EulerCommon
    implicit none
    integer, parameter :: int64 = selected_int_kind(15)
+   integer, parameter :: int32 = selected_int_kind(10)
    integer, parameter :: dp = selected_real_kind(15,307)
+   real(dp), parameter :: varphi = 0.5_dp + (0.5_dp)*sqrt(5.0_dp)
    
 contains
    !> check to see if all digits are in the number
-   logical function isPandigital(n)
+   logical function is_pandigital(n)
       integer(kind=int64), intent(in) :: n
       character(9) :: str, digits
       character(1) :: repin, repout
@@ -23,12 +25,8 @@ contains
          digits = replace_text(digits, repin, repout)
       end do
 
-      isPandigital = len(trim(digits)) == 0
-      
-      return
-       
-   end function isPandigital
-
+      is_pandigital = len(trim(digits)) == 0
+   end function is_pandigital
    
 
    !> replaces text in str with rep
@@ -48,7 +46,7 @@ contains
    end function replace_text
 
    !> returns true if the two input numbers are permutations of each other
-   logical function isPermutation(a,b,n)
+   logical function is_permutation(a,b,n)
       integer(int64), intent(in) :: a, b, n
       character(len=n) :: t1, t2
       character(len=1) :: repin, repout
@@ -63,11 +61,8 @@ contains
          t2 = replace_text(t2, repin, repout)
       end do !- i
 
-      isPermutation = len(trim(t2)) == 0
-      
-      return
-      
-   end function isPermutation
+      is_permutation = len(trim(t2)) == 0
+   end function is_permutation
 
    !> quick sort function
    recursive subroutine sort(X)
@@ -118,43 +113,42 @@ contains
       end do
    end function partition
 
-   !> primality test (not terribly efficient)
-   logical function isPrime(n) result(res)
-    integer(int64), intent(in) :: n
-    integer(int64) :: x, i
+   !> primality test using 6 complement
+   logical function is_prime6(n) result(res)
+     integer(int64), intent(in) :: n
+     integer(int64) :: x, i
+     
+     if (n < 2) then
+        res = .false.
+        return
+     end if
+     
+     if (any(n==[2,3])) then
+        res = .true.
+        return
+     end if
+     
+     if (mod(n,2)==0 .or. mod(n,3)==0) then
+        res = .false.
+        return
+     end if
+     
+     ! test by 6k+/-1 complement
+     x = int(sqrt(real(n)))+1
+     do i=6,x,6
+        if (mod(n,i-1)==0 .or. mod(n,i+1)==0) then
+           res = .false.
+           return
+        end if
+     end do
 
-    if (n < 2) then
-       res = .false.
-       return
-    end if
+     res = .true.
+     return
+   end function is_prime6
 
-    if (any(n==[2,3])) then
-       res = .true.
-       return
-    end if
-
-    if (mod(n,2)==0 .or. mod(n,3)==0) then
-       res = .false.
-       return
-    end if
-
-    ! test by 6k+/-1 complement
-    x = int(sqrt(real(n)))+1
-    do i=6,x,6
-       if (mod(n,i-1)==0 .or. mod(n,i+1)==0) then
-          res = .false.
-          return
-       end if
-    end do
-
-    res = .true.
-    return
-  end function isPrime
-  
-  !> more efficient is_prime function than above, adapted from http://stackoverflow.com/a/5694432/1276356
-  logical function is_prime(x) result(bool)
+   !> more efficient is_prime function, adapated from http://stackoverflow.com/a/5694432/1276356
+   logical function is_prime(x) result(bool)
       integer(int64), intent(in) :: x
-      integer(int64) :: small_primes(10) = [2,3,5,7,11,13,17,19,23,29]!, indices(8) = [1,7,11,13,17,19,23,29]
       integer(int64) ::N, i, p, q
       N = 10
       ! test small primes for a match
@@ -271,28 +265,28 @@ contains
       bool = .true.
       return
    end function is_prime
-  
-  !> returns the next prime after input number n (not required to be prime)
-  integer(int64) function next_prime(n) result(p)
-     integer(int64), intent(in) :: n
-     integer(int64) :: st
-     ! take care of the only even prime
-     if (n==2) then
-        p = 3
-        return
-     end if
-     
-     ! starting number should otherwise be odd
-     st = merge(n+1, n+2, mod(n,2)==0)
-     
-     ! loop through and test primes, using Bertrand's theorem
-     do p=st,2*n,2
-        if (is_prime(p)) return
-     end do !- p
-  end function next_prime
+
+   !> returns the next primes above n
+   integer(int64) function next_prime(n) result(p)
+      integer(int64), intent(in) :: n
+      integer(int64) :: st
+      ! take care of the only even prime
+      if (n==2) then
+         p = 3
+         return
+      end if
+
+      ! starting number should otherwise be odd
+      st = merge(n+1, n+2, mod(n,2)==0)
+
+      ! loop through and test primes, using Bertrand's postulate
+      do p=st,2*n,2
+         if (is_prime(p)) return
+      end do !- p
+   end function next_prime
 
    !> generate a logical array indicating if index i is prime or composite
-   subroutine prime_sieve(n,p)
+   subroutine prime_sieve(n, p)
       integer(int64), intent(in) :: n
       logical, dimension(n), intent(out) :: p
       integer(int64) :: i, q(5)=[2,3,5,7,11], r
@@ -337,6 +331,7 @@ contains
       end do
    end subroutine find_factors
 
+   !> factorize a number n
    function factor(n) result(factors)
       integer(int64), intent(in) :: n
       integer(int64), dimension(200) :: factors
@@ -362,10 +357,11 @@ contains
       end do
    end function factor
 
+   !> returns the largest divisor of n
    integer(int64) function trial_division(n) result(F)
       integer(int64), intent(in) :: n
-      integer(int64) :: m, dif(8), p(3)=[2,3,5]
-      integer(int64) :: i
+      integer(int64), parameter :: dif(8)=[6,4,2,4,2,4,6,2], p(3)=[2,3,5]
+      integer(int64) :: i, m
       
       if (n == 1) then
          F = 1_int64
@@ -379,7 +375,6 @@ contains
          end if
       end do
 
-      dif = [6,4,2,4,2,4,6,2]
       m = 7; i = 1
       do while (m < n .and. m*m <= n)
          if (mod(n,m) == 0) then
@@ -394,92 +389,141 @@ contains
       return
    end function
 
-!~ def trial_division(n, bound=None):
-!~     if n == 1: return 1
-!~     for p in [2, 3, 5]:
-!~         if n%p == 0: return p
-!~     if bound == None: bound = n
-!~     dif = [6, 4, 2, 4, 2, 4, 6, 2]
-!~     m = 7; i = 1
-!~     while m <= bound and m*m <= n:
-!~         if n%m == 0:
-!~             return m
-!~         m += dif[i%8]
-!~         i += 1
-!~     return n
-
-   logical function noDuplicates(array) result(bool)
-      integer(int64), intent(in) :: array(:)
+   !> returns true if there are not any duplicated entries in the array, false otherwise
+   logical function no_dupes(A) result(bool)
+      integer(int64), intent(in) :: A(:)
       integer(int64) :: i, k
 
-      do i=1,size(array)
-         k = array(i)
-         if (any(k == array(i+1:)) .or. any(k == array(:i-1))) then
+      do i=1,size(A)
+         k = A(i)
+         if (any(k == A(i+1:))) then
             bool = .false.
             return
          end if
       end do
       bool = .true.
       return
-      
-   end function noDuplicates
+   end function no_dupes
 
-   !> works for first 50-ish Fibonacci numbers
+   !> works for first 70-ish Fibonacci numbers; uses real-precision based computation of analytic solution
    integer(int64) function fibonacci_approx(n) result(F)
       integer(int64), intent(in) :: n
       real(dp), parameter :: sq5_inv = 1.0_dp / sqrt(5.0_dp)
-      F = floor(sq5_inv * varphi**n + 0.5_dp)
+      F = int(sq5_inv * varphi**n + 0.5_dp,int64)
    end function fibonacci_approx
 
-   integer(int64) function fibonacci(n) result(F)
+   !> returns the nth fibonacci number by choosing a method (picks fastest by default)
+   integer(int64) function fibonacci(n,methOpt) result(F)
+      integer(int64), intent(in) :: n
+      integer(int64), optional :: methOpt
+      integer(int64) :: m
+
+      m = 1_int64
+      if (present(methOpt)) m = methOpt
+
+      f = 0_int64
+
+      select case(m)
+        case(1)
+           F = fibonacci_doubling(n)
+        case(2)
+           F = fibonacci_matrix(n)
+        case(3)
+           F = fibonacci_approx(n)
+      end select
+   end function fibonacci
+
+   !> returns the nth fibonacci number using matrix exponentiation (fast!)
+   integer(int64) function fibonacci_matrix(n) result(F)
       integer(int64), intent(in) :: n
       integer(int64), dimension(2,2) :: Q, S
       integer(int64) :: i
       Q = reshape([0, 1, 1, 1], [2,2])
       S = Q
       do i=1,n-1
-         Q = matmul(S,Q)
+!~          Q(1,1) = Q(1,1)*S(1,1) + Q(1,2)*S(2,1); Q(1,2) = Q(1,1)*S(1,2) + Q(1,2)*S(2,2)
+!~          Q(2,1) = Q(2,1)*S(1,1) + Q(2,2)*S(2,1); Q(2,2) = Q(2,1)*S(1,2) + Q(2,2)*S(2,2)
+!~           ! curiously, the above is giving incorrect answers
+         Q = matmul(Q,S)
       end do
       F = Q(2,1)
-   end function fibonacci
+   end function fibonacci_matrix
+
+   !> returns the nth fibonacci number using the fast-doubling method (fastest!)
+   integer(int64) function fibonacci_doubling(n) result(F)
+      integer(int64), intent(in) :: n
+      integer(int64) :: i, a, b, c, d, t
+      i = n - 1_int64
+      a = 1_int64
+      b = 0_int64
+      c = 0_int64
+      d = 1_int64
+
+      ! test small numbers
+      if (n <= 0_int64) then
+         F = 0
+         return
+      end if
+
+      ! iterate through
+      do while (i > 0_int64)
+         ! need odd numbers
+         do while (mod(i,2_int64)==0_int64)
+            t = d*(2_int64*c + d)
+            c = c*c + d*d
+            d = t
+            i = i/2_int64
+         end do
+         t = d*(b + a) + c*b
+         a = d*b + c*a
+         b = t
+         i = i - 1_int64
+      end do
+      F = a+b
+   end function fibonacci_doubling
 
    !> returns the triangle sequence
-   subroutine setTriangleSequence(n, T)
+   subroutine set_triangle(n, T)
       integer(int64), intent(in) :: n
       integer(int64), dimension(n) :: T
       integer(int64) :: i
 
       do i=1,n
-         T(i) = int(i * (i + 1) / 2, int64)
+         T(i) = triangular(i)
       end do
-   end subroutine setTriangleSequence
+   end subroutine set_triangle
+
+   !> returns the triangular number of n
+   integer(int64) function triangular(n) result(s)
+      integer(int64), intent(in) :: n
+      s = n*(n+1_int64) / 2_int64
+   end function triangular
 
    !> returns the sum of the characters in the string
-   integer(int64) function charSum(str_in) result(T)
+   integer(int64) function char_sum(str_in) result(T)
       character(len=*), intent(in) :: str_in
       character(len=len(str_in)) :: str
       integer(int64) :: i
 
+      ! ensure the string is uppercase before running char_map
       str = to_upper(str_in)
 
       T = 0
       do i=1,len(str)
-         T = T + charmap(str(i:i))
+         T = T + char_map(str(i:i))
       end do
-      
-   end function charSum
+   end function char_sum
 
-   !> returns the letter number
-   integer(int64) function charMap(char) result(T)
+   !> returns the letter number based on it's position in the alphabet
+   integer(int64) function char_map(char) result(T)
       character(len=1), intent(in) :: char
       character(len=26) :: A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
       T = index(A, char)
-      
-   end function charMap
+   end function char_map
 
    !> returns the sum of the ascii values of the string
-   integer(int64) function asciiSum(str) result(T)
+   integer(int64) function ascii_sum(str) result(T)
       character(len=*), intent(in) :: str
       integer(int64) :: i
 
@@ -487,7 +531,7 @@ contains
       do i=1,len(str)
          T = T + iachar(str(i:i))
       end do
-   end function asciiSum
+   end function ascii_sum
 
    !> convert string to upper case
    function to_upper(strIn) result(strOut)
@@ -503,26 +547,7 @@ contains
             strOut(i:i) = strIn(i:i)
          end if
       end do
-
    end function to_upper
-
-   !> permute numbers
-   recursive subroutine generate(nmin, nmax, position, permutation)
-      integer(int64), intent(in) :: nmin, nmax, position
-      integer(int64), dimension(nmin:nmax) :: permutation
-      integer(int64) :: value
-      
-      if (position > nmax) then
-         print '(4(1x,i2))',permutation
-      else
-         do value = nmin, nmax
-            if (.not. any (permutation (: position - 1) == value)) then
-               permutation (position) = value
-               call generate (nmin, nmax, position + 1_int64, permutation)
-            end if
-         end do
-      end if
-   end subroutine generate
 
    !> find the permutation index
    integer(int64) function kperm(n,m)
@@ -568,23 +593,22 @@ contains
       end do
    end subroutine nextPermutation
 
+   !> returns the factorial using either simple loop or log-gamma
    integer(int64) function factorial(n) result(F)
       integer(int64), intent(in) :: n
       integer(int64) :: i
 
-      if (n < 30) then
-
-        F = 1
+      if (n < 30_int64) then
+        F = 1_int64
         do i=1,n
           F = F * i
         end do
       else
          F = nint(exp(gammaln(n+1._dp)))
       end if
-      
-   end function
+   end function factorial
 
-   !> the log-gamma function
+   !> the log-gamma function (in case lgamma(x) isn't available w/ compiler)
    real(dp) function gammaln(n) result(lg)
       real(dp), intent(in) :: n
       real(dp) :: ser, tmp, x, y
@@ -606,7 +630,7 @@ contains
       lg = tmp + log(stp*ser / x)
    end function gammaln
 
-   !> turns an array into a single number
+   !> turns an array into a single number--assumes that size(n) <= 19 digits
    integer(int64) function arrayAsNumber(n) result(A)
       integer(int64), intent(in) :: n(:)
       integer(int64) :: i
@@ -617,6 +641,7 @@ contains
    end function arrayAsNumber
 
    !> ensures the array doesn't have tens by shifting them upwards
+   !>  useful for simulating big integers with linear arrays
    subroutine checkTensInArray(n,test)
       integer(int64), intent(in) :: n
       integer(int64), intent(inout) :: test(:)
@@ -627,13 +652,14 @@ contains
             m = test(i)
             k = int(test(i)*0.1)
             test(i+1) = test(i+1) + k
-            test(i) = m - 10*k
+            test(i) = m - 10_int64*k
          end if
       end do
 
       test(n:) = 0
    end subroutine checkTensInArray
 
+   !> returns the permutation of M
    subroutine PERMNX(M,D,N,RT)
       integer(int64), intent(in) :: n
       integer(int64), intent(inout) :: RT
@@ -641,38 +667,37 @@ contains
       integer(int64) :: DK,T,K,J,KL
 !                          BRANCH TO 2 IF WE ARE IN THE MIDDLE OF THINGS
       if (rt == 0) then
-         d(1:n) = 0
+         d(1:n) = 0_int64
       end if
 
-      RT = 0
-      j = -1
-      KL = 1
+      RT = 0_int64
+      j = -1_int64
+      KL = 1_int64
       do k=2,n
          dk = d(k)
          if (dk /= kl) then
-            rt = 1
+            rt = 1_int64
             exit
          end if
-         d(k) = 0
+         d(k) = 0_int64
          j = -j
          kl = k
       end do
 
-      if (rt == 0) return
+      if (rt == 0_int64) return
 
-      d(k) = dk + 1
+      d(k) = dk + 1_int64
       dk = d(k)
-      if (j /= 1 .and. dk > 2) kl = k - d(k)
+      if (j /= 1_int64 .and. dk > 2_int64) kl = k - d(k)
 
       T = m(k)
       m(k) = m(kl)
       m(kl) = t                                                    
-      return                                                         
    end subroutine PERMNX
 
 
    !> return the next permutation
-   function nextPermutationStr(str) result(outs)
+   function next_perm_str(str) result(outs)
       character(len=*), intent(in) :: str
       character(len=len(str)) :: outs
       character(len=1) :: swap
@@ -681,10 +706,10 @@ contains
       outs = str
 
       ! step 1: find highest index such that str(i) < str(i+1)
-      i = len(outs)-1
-      do while (i /= 1)
+      i = len(outs) - 1_int64
+      do while (i /= 1_int64)
          if (iachar(outs(i:i)) > iachar(outs(i+1:i+1))) exit
-         i = i - 1
+         i = i - 1_int64
       end do
 
       ! step 2: find j>1 such that str(j) > str(i)
@@ -702,21 +727,21 @@ contains
       j = len(outs)
       do while (i /= len(outs))
          outs(i:i) = str(j:j)
-         i = i + 1
-         j = j - 1
+         i = i + 1_int64
+         j = j - 1_int64
       end do
       
-   end function nextPermutationStr
+   end function next_perm_str
 
    !> count the number of repetitions of the subarray in the array
    integer(int64) function count_repetitions(sub, array) result(num)
       integer(int64), intent(in) :: sub(:), array(:)
       integer(int64) :: ns, na, i
       ns = size(sub); na = size(array)
-      num = 0
+      num = 0_int64
 
       do i=1,na
-         if (all(sub(:) == array(i:i+ns-1))) num = num + 1
+         if (all(sub(:) == array(i:i+ns-1))) num = num + 1_int64
       end do
    end function count_repetitions
 
@@ -729,11 +754,11 @@ contains
       ctr = 0_int64
 
       do i=1,ns
-         if (sub == str(i:i+na-1)) ctr = ctr + 1
+         if (sub == str(i:i+na-1)) ctr = ctr + 1_int64
       end do
    end function count_substr
 
-   !> return the number of primes in the integer given replacement
+   !> return the number of primes in the string given replacement
    integer(int64) function count_primes(str,d,p_list) result(ctr)
       character(len=*), intent(in) :: str, d
       logical, dimension(:), intent(in) :: p_list
@@ -742,23 +767,23 @@ contains
       integer(int64) :: nd,i,val,nlist,j,ns
 
       nd = len(d)
-      if (nd /= 1) then
-         ctr = -1
+      if (nd /= 1_int64) then
+         ctr = -1_int64
          return
       end if
 
       nlist = size(p_list)
       ns = len(str)
 
-      ctr = 0
+      ctr = 0_int64
       do i=1,10
          do j=1,ns
             new_str(j:j) = merge(digits(i:i),str(j:j),str(j:j)==d(1:1))
          end do
          read(new_str,*) val
-         if (val < 100000) continue
+         if (val < 100000_int64) continue
          if (val > nlist) continue
-         if (p_list(val)) ctr = ctr + 1
+         if (p_list(val)) ctr = ctr + 1_int64
       end do
    end function count_primes
 
@@ -774,6 +799,7 @@ contains
       nk = nint(exp(factl(n) - factl(k) - factl(n-k)))
    end function choice
 
+   !> returns the factorial using the Gamma function
    real(dp) function factl(n) result(F)
       integer(int64), intent(in) :: n
       real(dp) :: x
@@ -781,10 +807,12 @@ contains
       F = exp(gammaln(x+1_dp))
    end function factl
 
+   !> initialize the random number generator based on clock time
    subroutine init_random_seed()
-      integer, allocatable :: seed(:)
-      integer(int64) :: i, n, un, istat, dt(8), pid
-      integer(int64) :: t
+      integer(int32), allocatable :: seed(:)
+      integer(int32) :: i, un, istat, dt(8), pid
+      integer(int32) :: t
+      integer :: n
       
       call random_seed(size = n)
       allocate(seed(n))
@@ -814,23 +842,24 @@ contains
             seed(i) = lcg(t)
          end do
       end if
-      call random_seed(put=seed)
+      call random_seed(put=int(seed))
    contains
     ! This simple PRNG might not be good enough for real work, but is
     ! sufficient for seeding a better PRNG.
-      integer(int64) function lcg(s)
-        integer(int64) :: s
+      integer(int32) function lcg(s)
+        integer(int32) :: s
         if (s == 0) then
-           s = 104729
+           s = 104729_int32
         else
-           s = mod(s, 4294967296_int64)
+           s = mod(s, 4294967296_int32)
         end if
-        s = mod(s * 279470273_int64, 4294967291_int64)
+        s = mod(s * 279470273_int32, 4294967291_int32)
         lcg = int(mod(s, int(huge(0))))
       end function lcg
    end subroutine init_random_seed
 
-   subroutine swap(a,b)
+   !> swap two variables values
+   pure subroutine swap(a,b)
       integer(int64), intent(inout) :: a,b
       integer(int64) :: T
       t = a
@@ -838,12 +867,12 @@ contains
       b = t
    end subroutine swap
 
-
-   !> implements binary gcd
-   integer(int64) function gcd(a, b) result(g)
+   !> implements iterative greatest common denominator
+   recursive function gcd(a, b) result(g)
       integer(int64), intent(in) :: a, b
       integer(int64), parameter :: zero=0, one=1, two=2
       integer(int64) :: u, v, t, k
+      integer(int64) :: g
 
       u = abs(a)
       v = abs(b)
@@ -855,8 +884,8 @@ contains
          return
       end if
 
-      k = 1
-      do while ( (mod(u,two) == zero) .and. (mod(v,two) == 0))
+      k = one
+      do while ( (mod(u,two) == zero) .and. (mod(v,two) == zero))
          u = u / two
          v = v / two
          k = k * two
@@ -881,6 +910,30 @@ contains
       return
    end function gcd
 
+   !> extended greatest common denominator
+   integer(int64) function egcd(a,b) result(g)
+      integer(int64), intent(in) :: a,b
+      integer(int64) :: lastx,lasty,x,y,u,v,q,t
+      u = a; v = b
+      lastx=1_int64; lasty=0_int64
+      x=0_int64; y=1_int64
+      do while (v /= 0_int64)
+         q = u/v
+         t = v
+         v = mod(a,v)
+         u = t
+
+         t = x
+         x = lastx - q*x
+         lastx = t
+
+         t = y
+         y = lasty - q*u
+         lasty = t
+      end do
+      g = lastx
+   end function egcd
+
    !> least common multiple of two numbers
    integer(int64) function lcm(a,b)
       integer(int64), intent(in) :: a,b
@@ -896,23 +949,23 @@ contains
       integer(int64) :: coll
       
       if (n <= size(lengths)) then
-         if (lengths(n) /= 0) then
+         if (lengths(n) /= 0_int64) then
             coll = lengths(n)
             return
-         else if (n == 1) then
-            coll = 1
-            lengths(1) = 1
+         else if (n == 1_int64) then
+            coll = 1_int64
+            lengths(1) = 1_int64
             return
          end if
       end if
 
-      if ( modulo(n,2_int64) == 0 ) then
-         coll = 1 + Collatz(n/2 , lengths, .true.)
+      if ( modulo(n,2_int64) == 0_int64 ) then
+         coll = 1_int64 + Collatz(n/2_int64 , lengths, .true.)
       else
-         coll = 1 + Collatz(3*n + 1 , lengths, .true.)
+         coll = 1_int64 + Collatz(3_int64*n + 1_int64 , lengths, .true.)
       end if
 
-      if ( present(memoise) ) then
+      if (present(memoise)) then
          if (memoise) then
             if (n <= size(lengths)) lengths(n) = coll
          end if
@@ -923,37 +976,37 @@ contains
    logical function mr_prime(n,kopt) result(bool)
       integer(int64), intent(in) :: n
       integer(int64), optional :: kopt
-      integer(int64), parameter :: known_primes(5) = [2,3,5,7,11], two=2_int64
+      integer(int64), parameter :: two=2_int64
       integer(int64) :: k
       integer(int64) :: s, d, i, a, x, r
 
       
-      k = 30
+      k = 30_int64
       if (present(kopt)) k = kopt
 
-      ! if this line doesn't work for you, get a better compiler
-      if (any(n==known_primes)) then
+      ! test the small, known primes
+      if (any(n==small_primes)) then
          bool = .true.
          return
       end if
 
-      ! eliminate numbers less than ten that aren't prime as above
-      if (n < 10) then
+      ! eliminate numbers less than 30 that aren't prime as above
+      if (n < 30_int64) then
          bool = .false.
          return
       end if
 
       ! eliminate factors of the small known primes
-      do i=1,5
-         if (mod(n,known_primes(i))==0_int64) then
+      do i=1,size(small_primes,1)
+         if (mod(n,small_primes(i))==0_int64) then
             bool = .false.
             return
          end if
       end do
 
-      s = 1
-      do while ((mod(n-1, two**s))==0_int64)
-         s = s + 1
+      s = 1_int64
+      do while ((mod(n-1_int64, two**s))==0_int64)
+         s = s + 1_int64
       end do !- while
 
       d = (n-1_int64) / two**s
@@ -961,10 +1014,10 @@ contains
       do i=1,k
          a = randrange(two, n-two)
          x = mod(a**d, n)
-         if (x < 1 .or. x>n-1) then
+         if (x < 1_int64 .or. x > (n -1_int64)) then
             do r=1,s-1
                x = mod(x**(two*r), n)
-               if (x==1) then
+               if (x == 1_int64) then
                   bool = .false.
                   return
                end if
@@ -990,63 +1043,62 @@ contains
       integer(int64) :: L
       
       ! if the next line doesn't work, get a better compiler
-      if (any(a==[0,1])) then
+      if (any(a==[0_int64,1_int64])) then
          L = a
          return
       end if
 
-      if (mod(a,2_int64)==0) then
-         L = legendre(a/2, p)
-         if (iand(p*p-1, 8_int64) /= 0) L = -1*L
+      if (mod(a,2_int64)==0_int64) then
+         L = legendre(a/2_int64, p)
+         if (iand(p*p-1_int64, 8_int64) /= 0_int64) L = -1_int64*L
       else
          L = legendre(mod(p,a), a)
-         if (iand((a-1)*(p-1), 4_int64) /= 0) L = -1*L
+         if (iand((a-1_int64)*(p-1_int64), 4_int64) /= 0_int64) L = -1_int64*L
       end if
       return
    end function legendre
 
-   !> sum the digits
+   !> sum the digits (size(a)=20 is larger than what int64 holds)
    integer(int64) function digit_sum(n) result(D)
       integer(int64), intent(in) :: n
-      integer(int64) :: m, a(32), b=10, i
+      integer(int64) :: m, a(20), b=10_int64, i
 
-      a=0; m=n; i=1
-      do while (m /= 0)
+      a=0_int64
+      m=n
+      i=1_int64
+      do while (m /= 0_int64)
          a(i) = mod(m,b)
          m = m / b
-         i = i + 1
+         i = i + 1_int64
       end do
       D = sum(a)
    end function digit_sum
 
-   function sigma2(x, n) result(divs)
-      integer(int64) :: n, x
+   !> returns divisor sum square
+   function sigma2(pow, n) result(divs)
+      integer(int64) :: n, pow
       integer(int64), dimension(0:n) :: divs
-      integer(int64) :: i, d
+      integer(int64) :: i, d, ip
 
-      divs(0:1) = [0,1]
+      divs(0:1) = [0_int64,1_int64]
       do i=2,n
-         divs(i) = i**x + 1
+         divs(i) = i**pow + 1_int64
       end do !- i
-      do i=2,int(n**0.5)+1
-         divs(i*i) = divs(i*i) + i**x
+      do i=2,int(n**0.5)+1_int64
+         ip = i**pow
+         divs(i*i) = divs(i*i) + ip
          do d=i*(i+1),n,i
-            divs(d) = divs(d) + i**x + (d/i)**x
+            divs(d) = divs(d) + ip + (d/i)**pow
          end do !- d
       end do !- i
    end function sigma2
 
+   !> returns true if a & b are within [1,S] and false otherwise
    logical function legal_move(a,b,S)
       integer(int64), intent(in) :: a,b,S
-      legal_move = (a > 0) .and. (a < S+1) .and. (b > 0) .and. (b < S+1)
+      legal_move = (a > 0_int64) .and. (a < S+1_int64) &
+               .and. (b > 0_int64) .and. (b < S+1_int64)
    end function
-   
-   !> returns the triangular number of n
-   integer(int64) function triangular(n) result(s)
-      integer(int64), intent(in) :: n
-      s = n*(n+1_int64) / 2_int64
-   end function triangular
-
    
    !> returns the lagged fibonacci generator (for Euler 149)
    subroutine lfg(n,S)
