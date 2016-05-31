@@ -1147,4 +1147,10 @@ contains
       q = divmod(n, factorial(len(str)-1_int64))
       S = str(q(1):q(1)) + perm2(q(2), str(:q) // str(q+1:))
    end subroutine perm2
+   
+   !> returns the digital root of the number (e.g., 635 -> 6+3+5=14 -> 1+4=5)
+   integer(int64) function digital_root(n) result(dr)
+      integer(int64), intent(in) :: n
+      dr = 1_int64 + mod(n-1,9_int64)
+   end function digital_root
 end module EulerCommon
