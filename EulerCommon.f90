@@ -1115,4 +1115,36 @@ contains
          S(k) = mod(S(k-24) + S(k-55) + 1000000_int64, 1000000_int64) - 500000_int64
       end do !- k
    end subroutine lfg
+   
+   !> returns the nth Catalan number (recall 0-based indexing for such numbers)
+   integer(int64) function catalan(n) result(C)
+      integer(int64), intent(in) :: n
+      integer(int64) :: k, nm, dm
+      nm = 1
+      dm = 1
+      do k=2,n
+         nm = nm * (n+k)
+         dm = dm * k
+      end do !- k
+      C = nm/dm
+   end function catalan
+   
+   !> computes the integer division & remainder of two numbers
+   function divmod(a,b) result(R)
+      integer(int64), intent(in) :: a,b
+      integer(int64) :: R(2)
+      R(1) = a/b
+      R(2) = mod(a,b)
+   end function divmod
+   
+   !> given the string str, returns the nth permutation of it (untested, may not compile)
+   recursive subroutine perm2(n, str) result(S)
+      integer(int64), intent(in) :: n
+      character(len=*), intent(in) :: str
+      character(len=len(str)) :: S
+      integer(int64) :: q(2)
+      if (len(str)==1) return
+      q = divmod(n, factorial(len(str)-1_int64))
+      S = str(q(1):q(1)) + perm2(q(2), str(:q) // str(q+1:))
+   end subroutine perm2
 end module EulerCommon
