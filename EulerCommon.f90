@@ -799,18 +799,21 @@ contains
       nk = nint(exp(factl(n) - factl(k) - factl(n-k)))
    end function choice
    
-   !> uses recursive approach to binomial function
-   recursive function choose(n, k) result(C)
+   !> uses iterative approach to binomial function
+   integer(int64) function choose(n, k) result(C)
       integer(int64), intent(in) :: n, k
-      integer(int64) :: C
+      integer(int64) :: d
+      
       if (k > n) then
          C = -1_int64
       else if (k == 1_int64) then
          C = 1_int64
-      else if (k > n/2_int64) then
-         C = choose(n, n-k)
       else
-         C = n * choose(n-1_int64, k-1_int64) / k
+         C = 1
+         do d=1,k
+            C = (C*n)/d  ! ensure n/k isn't done first, as that can give 0
+            n = n - 1
+         end do !- d
       end if
    end function choose
 
