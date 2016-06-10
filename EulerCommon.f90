@@ -798,6 +798,21 @@ contains
       integer(int64), intent(in) :: n,k
       nk = nint(exp(factl(n) - factl(k) - factl(n-k)))
    end function choice
+   
+   !> uses recursive approach to binomial function
+   recursive function choose(n, k) result(C)
+      integer(int64), intent(in) :: n, k
+      integer(int64) :: C
+      if (k > n) then
+         C = -1_int64
+      else if (k == 1_int64) then
+         C = 1_int64
+      else if (k > n/2_int64) then
+         C = choose(n, n-k)
+      else
+         C = n * choose(n-1_int64, k-1_int64) / k
+      end if
+   end function choose
 
    !> returns the factorial using the Gamma function
    real(dp) function factl(n) result(F)
