@@ -1171,4 +1171,21 @@ contains
       integer(int64), intent(in) :: n
       dr = 1_int64 + mod(n-1,9_int64)
    end function digital_root
+   
+   !> returns the hyperbinary representation of m
+   integer(int64) function hyper_binary(m) result(b)
+      integer(int64), intent(in) :: m
+      integer(int64) :: a, n
+      n = m
+      a = 1
+      b = 0
+      do while (n > 0)
+         if (mod(n,2) == 1) then
+            b = a + b
+         else
+            a = a + b
+         end if
+         n = n/2_int64
+      end do
+   end function hyper_binary
 end module EulerCommon
