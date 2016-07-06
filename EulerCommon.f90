@@ -1172,6 +1172,14 @@ contains
       dr = 1_int64 + mod(n-1,9_int64)
    end function digital_root
    
+    !> divmod subroutine to get faster division & remainder functions
+   subroutine divmod(num,den,remainder,quotient)
+      integer(int64), intent(in) :: num, den
+      integer(int64), intent(out) :: remainder, quotient
+      quotient = int(num / den, int64)
+      remainder = num - quotient * den
+   end subroutine divmod
+   
    !> returns the hyperbinary representation of m
    integer(int64) function hyper_binary(m) result(b)
       integer(int64), intent(in) :: m
