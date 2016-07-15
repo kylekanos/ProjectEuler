@@ -1196,4 +1196,24 @@ contains
          n = n/2_int64
       end do
    end function hyper_binary
+   
+   !> returns mod(a^p, m) but more efficiently (~O(log(p)))
+   recursive integer(int64) function powmod(a, p, m) result(R)
+      integer(int64), intent(in) :: a, p, m
+      integer(int64) :: temp
+
+      ! take care of simple cases first
+      if (p == 0_int64) then
+         R = 1_int64
+      else if (p == 1_int64) then
+         R = mod(a, m)
+      else
+         temp = powmod(a, p/2_int64, m)
+         if (mod(p,2_int64) == 0_int64) then
+            R = mod(temp*temp, m)
+         else
+            R = mod(a*mod(temp*temp, m), m)
+         end if
+      end if
+   end function powmod
 end module EulerCommon
