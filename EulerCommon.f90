@@ -1216,4 +1216,38 @@ contains
          end if
       end if
    end function powmod
+   
+   !> generate boolean array of square-free numbers using a sieve
+   subroutine squarefree_sieve(n, sqfp)
+      integer(int64), intent(in) :: n
+      logical, intent(out) :: sqfp(n)
+      integer(int64), dimension(n) :: mu
+
+      ! get the moebius mu to n
+      call moebius_mu_sieve(n, mu)
+
+      ! the square-free numbers are the non-zero entries here
+      sqfp(1:n) = mu(1:n) /= 0_int64
+   end subroutine squarefree_sieve
+
+   !> generates the moebius mu function
+   subroutine moebius_mu_sieve(n, mu)
+      integer(int64), intent(in) :: n
+      integer(int64), dimension(n), intent(out) :: mu
+      logical, dimension(n) :: primes
+      integer(int64) :: k, p
+
+      ! get the primes <= to n
+      call prime_sieve(n, primes)
+
+      ! generate the mu
+      mu(:) = 1_int64
+      do k=2,n
+         if (primes(k)) then
+            mu(k:n:k) = -mu(k:n:k)
+            p = k*k
+            mu(p:n:p) = 0_int64
+         end if
+      end do !- k
+   end subroutine moebius_mu_sieve
 end module EulerCommon
