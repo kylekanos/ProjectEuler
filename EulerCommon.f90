@@ -1056,24 +1056,25 @@ contains
    end function randrange
    
    !> Legendre symbol (a/p); see https://en.wikipedia.org/wiki/Legendre_symbol
-   recursive function legendre(a, p) result(L)
+   integer(int64) function legendre(a, p) result(L)
       integer(int64), intent(in) :: a, p
-      integer(int64) :: L
-      
-      ! if the next line doesn't work, get a better compiler
-      if (any(a==[0_int64,1_int64])) then
-         L = a
-         return
+
+      if (.not.is_prime6(p)) then
+         print '("error: p=",i0,", which is not prime")',p
+         stop
       end if
 
-      if (mod(a,2_int64)==0_int64) then
-         L = legendre(a/2_int64, p)
-         if (iand(p*p-1_int64, 8_int64) /= 0_int64) L = -1_int64*L
+      ! check simple case of p=2, then mod(a,p)==0
+      if (p == 2_int64) then
+         L = merge(1_int64, 0_int64, mod(a,2) == 0_int64)
+      else if (mod(a,p) == 0_int64) then
+         L = 0_int64
       else
-         L = legendre(mod(p,a), a)
-         if (iand((a-1_int64)*(p-1_int64), 4_int64) /= 0_int64) L = -1_int64*L
+         L = powmod(a, (p-1)/2, p)
+         if (L /= 1_int64) then
+            L = -1_int64
+         end if
       end if
-      return
    end function legendre
 
    !> sum the digits (size(a)=20 is larger than what int64 holds)
@@ -1250,4 +1251,15 @@ contains
          end if
       end do !- k
    end subroutine moebius_mu_sieve
+   
+   integer(int64) function isqrt(n) result(x)
+      integer(int64), intent(in) :: n
+      integer(int64) :: y
+      x = y
+      y = (x + 1) / 2
+      do while (y < x)
+         x = y
+         y = (x + n / x) / 2
+      end do !- 
+   end function isqrt
 end module EulerCommon
