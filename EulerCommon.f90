@@ -1046,6 +1046,48 @@ contains
       bool = .true.
       return
    end function mr_prime
+   
+   !> Solovay–Strassen primality test
+   logical function ss_prime(n, kopt) result(bool)
+      integer(int64), intent(in) :: n
+      integer(int64), optional :: kopt
+      integer(int64) :: a, x, y, k, i
+
+      k = 16_int64
+      if (present(kopt)) k = kopt
+
+      ! check simple cases
+      if (n < 30_int64) then
+         if (any(n == small_primes)) then
+            bool = .true.
+         else
+            bool = .false.
+         end if
+         return
+      end if
+
+      ! check if mod of small primes
+      do i=1,size(small_primes)
+         if (mod(n,small_primes(i))==0_int64) then
+            bool = .false.
+            return
+         end if
+      end do !- i
+
+      ! do main probabilistic test
+      do i=1,k
+         a = randrange(2_int64, n-1)
+         x = legendre(a, n)
+         y = powmod(a, (n-1)/2, n)
+         if (x == 0_int64 .or. y /= mod(x,n)) then
+            bool = .false.
+            return
+         end if
+      end do !- i
+
+      bool = .true.
+      
+   end function ss_prime
 
    !> returns a random number in the range (a,b)
    integer(int64) function randrange(a, b) result(x)
