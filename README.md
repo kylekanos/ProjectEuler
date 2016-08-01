@@ -31,3 +31,4 @@ Note also that I'll not be posting *every* solution I have, just *some* of them.
 # TODO:
  - Separate EulerCommon into separate modules
   - e.g.: EulerPrime, EulerString, EulerMath...
+- improve the random number generator used (e.g., SFMT, Xorshift)
