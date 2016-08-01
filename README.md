@@ -9,8 +9,8 @@ Note also that I'll not be posting *every* solution I have, just *some* of them.
 
 **Problems Completed:** (147/562)
    * 1-53, 55-56, 58-59, 65-67, 69, 71-72, 78-79, 81, 83, 87, 89, 91-92, 94, 98-100
-   * 101-2, 105, 108-11, 114, 118-23, 125, 127, 129-32, 134-38, 140, 142, 144-46, 148-49, 151-53, 155-58, 160, 162, 164-65, 168-69, 171-72, 175, 179, 181, 183, 185, 187-88, 190, 193
-   * 201, 205-6, 211, 213, 218, 233, 243, 267
+   * 101-2, 105, 108-11, 114, 118-23, 125, 127, 129-32, 134-38, 140, 142, 144-46, 148-49, 151-53, 155-58, 160, 162, 164-65, 168-69, 171-72, 175, 179, 181, 183, 185, 187-88, 190, 193, 197
+   * 201, 205-7, 211, 213-4, 216, 218, 233, 243, 267
    * 303, 317, 381, 389, 393, 395
 
 **Awards Given:**
@@ -27,3 +27,7 @@ Note also that I'll not be posting *every* solution I have, just *some* of them.
    - One Percenter
    - Easy Prey
    - Hello World!
+
+# TODO:
+ - Separate EulerCommon into separate modules
+  - e.g.: EulerPrime, EulerString, EulerMath...
