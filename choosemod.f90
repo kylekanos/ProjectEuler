@@ -1,4 +1,4 @@
-!> solves choose(n,k) % p
+!> solves choose(n,k) % p; attributed to Daniel Fischer: http://stackoverflow.com/a/10862881
 integer(int64) function choosemod(n, k, p)
    integer(int64), intent(in) :: n, k, p
    if (k < 0 .or. n < k) then
