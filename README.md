@@ -7,12 +7,13 @@ Note also that I'll not be posting *every* solution I have, just *some* of them.
 
 # Current Progress
 
-**Problems Completed:** (151/562)
-   * 1-53, 55-56, 58-59, 65-67, 69, 71-72, 78-79, 81, 83, 87, 89, 91-92, 94, 98-100
-   * 101-2, 105, 108-11, 114, 118-23, 125, 127, 129-32, 134-38, 140, 142, 144-46, 148-49, 151-53, 155-58, 160, 162, 164-65, 168-69, 171-72, 175, 179, 181, 183, 185, 187-88, 190, 193, 197
-   * 201, 205-7, 211, 213-4, 216, 218, 233, 243, 267
-   * 303, 317, 381, 389, 393, 395
-
+**Problems Completed:** (207/586)
+   * 1-56, 58-59, 64-67, 69, 71-72, 78-79, 81, 83, 87-89, 91-94, 98-100
+   * 101-2, 105, 108-11, 114, 118-23, 125, 127-32, 134-38, 140, 142, 144-46, 148-49, 151-53, 155-58, 160, 162-65, 168-72, 175, 179, 181, 183, 185, 187-90, 193, 197
+   * 201, 204-7, 210-11, 213-14, 216-18, 221, 223-27, 231, 233, 235, 239-41, 243, 245, 248-49, 251, 253, 257, 263, 267, 271, 276-77, 281-282, 291
+   * 303, 317, 322, 332, 342, 258, 265, 370, 377, 381, 389, 393, 395
+   * 501, 504, 513, 517, 521, 525, 530, 554-56, 559, 561, 572, 581
+   
 **Awards Given:**
    - Baby Steps
    - Journey Begins
@@ -20,11 +21,16 @@ Note also that I'll not be posting *every* solution I have, just *some* of them.
    - Flawless Fifty
    - As Easy As Pie
    - Unlucky Squares
+   - Prime Obsession
    - Trinary Triumph
    - Fibonacci Fever
    - Daring Dozen
    - Decimation I
+   - Decimation II
+   - Ultimate Decimator
    - One Percenter
+   - On The Ball
+   - One In A Hundred
    - Easy Prey
    - Hello World!
 
@@ -32,3 +38,4 @@ Note also that I'll not be posting *every* solution I have, just *some* of them.
  - Separate EulerCommon into separate modules
   - e.g.: EulerPrime, EulerString, EulerMath...
  - improve the random number generator used (e.g., SFMT, Xorshift)
+ - Update with some codes
